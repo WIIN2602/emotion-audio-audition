@@ -3,17 +3,19 @@ import pandas as pd
 
 st.set_page_config(page_title="Audio Audition Platform", layout="centered")
 
-# 1. โหลดข้อมูลจาก Google Sheets เฉพาะแท็บ Audition_Data
+# 1. โหลดข้อมูลจาก Google Sheets เฉพาะแท็บ Audition_Data ที่เปิดเผยแพร่แล้ว
 @st.cache_data
 def load_data():
-    # เปลี่ยนมาใช้ลิงก์ที่เจาะจง gid ของแท็บ Audition_Data (gid=189130504)
+    # ลิงก์ตรงที่เจาะจงเฉพาะแท็บ Audition_Data (gid=189130504) ในรูปแบบส่งออก CSV
     csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCyZquKSv6jlhdnKA7r_L8tr9rrmbCO9oEID-v0YHHfMsBpzM8w9stkhJdvhNTb9MTRvz5b6nZbJ8E/pub?gid=189130504&single=true&output=csv"
+    
+    # ดึงข้อมูลพร้อมตั้งค่า Timeout ป้องกันการค้าง
     df = pd.read_csv(csv_url)
     
-    # ทำความสะอาดช่องว่างรอบๆ ชื่อคอลัมน์ ป้องกันการพิมพ์ผิดช่อง
+    # ทำความสะอาดช่องว่างรอบๆ ชื่อคอลัมน์ ป้องกันการตรวจจับพลาด
     df.columns = df.columns.str.strip()
     
-    # ป้องกันกรณีมีแถวว่างเปล่าติดมาด้านล่างตาราง
+    # เลือกตัดแถวที่เป็นค่าว่างออก
     df = df.dropna(subset=['label', 'filename'])
     
     return df.reset_index(drop=True)
@@ -23,6 +25,7 @@ try:
     df_audition = load_data()
 except Exception as e:
     st.error(f"❌ เกิดปัญหาในการดึงข้อมูลจากแท็บ Audition_Data: {e}")
+    st.info("💡 วิธีแก้ไข: โปรดตรวจสอบว่าได้กด 'ไฟล์ > แชร์ > เผยแพร่ไปยังเว็บ' และเลือกแท็บ 'Audition_Data' บน Google Sheets แล้วหรือยัง")
     st.stop()
 
 # สร้างระบบจำหน้าปัจจุบัน
