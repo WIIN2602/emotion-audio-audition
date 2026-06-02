@@ -1,21 +1,32 @@
 import streamlit as st
 import pandas as pd
+import re
 
 st.set_page_config(page_title="Audio Audition Platform", layout="centered")
 
-# 1. โหลดข้อมูลจาก Google Sheets เฉพาะแท็บ Audition_Data ที่เปิดเผยแพร่แล้ว
-@st.cache_data
+# ฟังก์ชันแปลงลิงก์ Google Drive ให้เป็น Direct Download Link เพื่อให้เครื่องเล่น st.audio กดฟังได้
+def to_direct_link(url):
+    if pd.isna(url) or not str(url).startswith("http"):
+        return None
+    url = str(url).strip()
+    # ตรวจจับโครงสร้างลิงก์ของ Google Drive (uc?id=... หรือ file/d/.../)
+    match = re.search(r'(?:id=|/d/)([\w-]+)', url)
+    if "drive.google.com" in url and match:
+        file_id = match.group(1)
+        return f"https://docs.google.com/uc?export=download&id={file_id}"
+    return url
+
+# 1. โหลดข้อมูลเจาะจงเฉพาะแท็บ Audition_Data (gid=189130504)
+@st.cache_data(ttl=60)  # ตั้งเวลาเคลียร์แคชทุกๆ 1 นาที เผื่อมีการอัปเดตข้อมูลบนชีต
 def load_data():
-    # ลิงก์ตรงที่เจาะจงเฉพาะแท็บ Audition_Data (gid=189130504) ในรูปแบบส่งออก CSV
-    csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCyZquKSv6jlhdnKA7r_L8tr9rrmbCO9oEID-v0YHHfMsBpzM8w9stkhJdvhNTb9MTRvz5b6nZbJ8E/pub?gid=189130504&single=true&output=csv"
-    
-    # ดึงข้อมูลพร้อมตั้งค่า Timeout ป้องกันการค้าง
+    # ใช้ลิงก์ตรงสำหรับส่งออก CSV จากแท็บ Audition_Data
+    csv_url = "https://docs.google.com/spreadsheets/d/1mBRUTgttVMTC1h8WNCXtM24Zvnz-WQcg1VtotPXQFIc/export?format=csv&gid=189130504"
     df = pd.read_csv(csv_url)
     
-    # ทำความสะอาดช่องว่างรอบๆ ชื่อคอลัมน์ ป้องกันการตรวจจับพลาด
+    # ทำความสะอาดช่องว่างรอบๆ ชื่อคอลัมน์
     df.columns = df.columns.str.strip()
     
-    # เลือกตัดแถวที่เป็นค่าว่างออก
+    # เลือกตัดแถวที่เป็นค่าว่างในส่วนสำคัญออก
     df = df.dropna(subset=['label', 'filename'])
     
     return df.reset_index(drop=True)
@@ -25,14 +36,18 @@ try:
     df_audition = load_data()
 except Exception as e:
     st.error(f"❌ เกิดปัญหาในการดึงข้อมูลจากแท็บ Audition_Data: {e}")
-    st.info("💡 วิธีแก้ไข: โปรดตรวจสอบว่าได้กด 'ไฟล์ > แชร์ > เผยแพร่ไปยังเว็บ' และเลือกแท็บ 'Audition_Data' บน Google Sheets แล้วหรือยัง")
+    st.info("💡 แนะนำให้ตรวจสอบว่ากด 'ไฟล์ > แชร์ > เผยแพร่ไปยังเว็บ' บน Google Sheets เรียบร้อยแล้ว")
     st.stop()
 
-# สร้างระบบจำหน้าปัจจุบัน
+# ระบบจำหน้าปัจจุบัน
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
 
-# ดึงข้อมูลแถวปัจจุบันมาใช้งาน
+# ตรวจสอบขอบเขตเผื่อจำนวนแถวเปลี่ยนไป
+if st.session_state.current_index >= len(df_audition):
+    st.session_state.current_index = 0
+
+# ดึงข้อมูลแถวปัจจุบันมาแสดงผล
 row = df_audition.iloc[st.session_state.current_index]
 emotion = row['label']
 filename = row['filename']
@@ -44,27 +59,20 @@ st.write(f"ความคืบหน้า: {st.session_state.current_index + 
 st.progress((st.session_state.current_index + 1) / len(df_audition))
 
 st.markdown("---")
-# emo = emotion.upper()
-# if emo == "ANGRY":
-#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: โกรธ")
-# elif emo == "HAPPY":
-#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: มีความสุข")
-# elif emo == "SAD":
-#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: เศร้า")
-# elif emo == "NEUTRAL":
-#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: ปกติ(พูดธรรมดา, ไม่มีอารมณ์ร่วม)")
 st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: {emotion.upper()}")
 st.info(f"**ข้อความที่ต้องอ่าน:** \n\n {transcript}")
 
-# ส่วนที่ 1: ฟังเสียงตัวอย่าง
+# ส่วนที่ 1: ฟังเสียงตัวอย่าง (เปิดใช้งาน Direct Link)
 st.write("### 1. ฟังเสียงตัวอย่าง")
-if pd.notna(audio_source_url) and str(audio_source_url).startswith("http"):
-    st.audio(audio_source_url)
+direct_audio_url = to_direct_link(audio_source_url)
+
+if direct_audio_url:
+    st.audio(direct_audio_url)
 else:
-    st.warning("⚠️ ไม่พบ URL ไฟล์เสียงต้นแบบในช่อง audio_url ของแถวนี้")
+    st.warning("⚠️ ไม่พบลิงก์เสียงตัวอย่างในช่อง audio_url ของแถวนี้ หรือลิงก์ไม่ถูกต้อง")
     st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3") 
 
-# ส่วนที่ 2: อัดเสียงด้วยฟังก์ชันมาตรฐานของ Streamlit
+# ส่วนที่ 2: อัดเสียงด้วยโมดูลของ Streamlit
 st.write("### 2. อัดเสียงของคุณ")
 audio_file = st.audio_input("💡 คลิกที่ปุ่มไมโครโฟนเพื่อเริ่มอัดเสียง")
 
