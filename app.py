@@ -44,15 +44,16 @@ st.write(f"ความคืบหน้า: {st.session_state.current_index + 
 st.progress((st.session_state.current_index + 1) / len(df_audition))
 
 st.markdown("---")
-emo = emotion.upper()
-if emo == "ANGRY":
-    st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: โกรธ")
-elif emo == "HAPPY":
-    st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: มีความสุข")
-elif emo == "SAD":
-    st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: เศร้า")
-elif emo == "NEUTRAL":
-    st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: ปกติ(พูดธรรมดา, ไม่มีอารมณ์ร่วม)")
+# emo = emotion.upper()
+# if emo == "ANGRY":
+#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: โกรธ")
+# elif emo == "HAPPY":
+#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: มีความสุข")
+# elif emo == "SAD":
+#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: เศร้า")
+# elif emo == "NEUTRAL":
+#     st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: ปกติ(พูดธรรมดา, ไม่มีอารมณ์ร่วม)")
+st.subheader(f"🎭 อารมณ์ที่ต้องแสดงออก: {emotion.upper()}")
 st.info(f"**ข้อความที่ต้องอ่าน:** \n\n {transcript}")
 
 # ส่วนที่ 1: ฟังเสียงตัวอย่าง
