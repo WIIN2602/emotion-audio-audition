@@ -7,7 +7,7 @@ st.set_page_config(page_title="Audio Audition Platform", layout="centered")
 @st.cache_data
 def load_data():
     # ลิงก์ตรงที่เจาะจงเฉพาะแท็บ Audition_Data (gid=189130504) ในรูปแบบส่งออก CSV
-    csv_url = "https://docs.google.com/spreadsheets/d/1mBRUTgttVMTC1h8WNCXtM24Zvnz-WQcg1VtotPXQFIc/export?format=csv&gid=189130504"
+    csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCyZquKSv6jlhdnKA7r_L8tr9rrmbCO9oEID-v0YHHfMsBpzM8w9stkhJdvhNTb9MTRvz5b6nZbJ8E/pub?gid=189130504&single=true&output=csv"
     
     # ดึงข้อมูลพร้อมตั้งค่า Timeout ป้องกันการค้าง
     df = pd.read_csv(csv_url)
