@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from streamlit_audio_recorder import audio_recorder
+from streamlit_audiorec import audio_recorder
 
 st.set_page_config(page_title="Audio Audition Platform", layout="centered")
 
