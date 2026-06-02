@@ -1,5 +1,42 @@
 import streamlit as st
 import pandas as pd
+import requests
+import io
+import re
+
+@st.cache_data(show_spinner=False)
+def fetch_audio_bytes(url: str) -> bytes | None:
+    """ดึงไฟล์เสียงจาก URL ใดก็ได้ (รวมถึง Google Drive) มาเป็น bytes
+    รองรับทั้ง:
+      - https://drive.google.com/file/d/FILE_ID/view
+      - https://docs.google.com/uc?export=download&id=FILE_ID
+      - URL ปกติอื่นๆ
+    """
+    # แปลง Google Drive share link → direct download link
+    gdrive_file_pattern = r"drive\.google\.com/file/d/([a-zA-Z0-9_-]+)"
+    gdrive_uc_pattern   = r"(?:docs\.google\.com/uc|drive\.google\.com/uc).*[?&]id=([a-zA-Z0-9_-]+)"
+
+    file_id = None
+    m = re.search(gdrive_file_pattern, url)
+    if m:
+        file_id = m.group(1)
+    else:
+        m = re.search(gdrive_uc_pattern, url)
+        if m:
+            file_id = m.group(1)
+
+    if file_id:
+        # ใช้ export=download พร้อม confirm=t เพื่อข้าม virus-scan warning
+        url = f"https://drive.google.com/uc?export=download&id={file_id}&confirm=t"
+
+    try:
+        resp = requests.get(url, timeout=15, allow_redirects=True)
+        resp.raise_for_status()
+        return resp.content
+    except Exception as e:
+        st.warning(f"⚠️ โหลดเสียงไม่สำเร็จ: {e}")
+        return None
+
 
 st.set_page_config(page_title="Audio Audition Platform", layout="centered")
 
@@ -50,10 +87,15 @@ st.info(f"**ข้อความที่ต้องอ่าน:** \n\n {tran
 # ส่วนที่ 1: ฟังเสียงตัวอย่าง
 st.write("### 1. ฟังเสียงตัวอย่าง")
 if pd.notna(audio_source_url) and str(audio_source_url).startswith("http"):
-    st.audio(audio_source_url)
+    with st.spinner("กำลังโหลดเสียงตัวอย่าง..."):
+        audio_bytes = fetch_audio_bytes(str(audio_source_url))
+    if audio_bytes:
+        st.audio(audio_bytes)
+    else:
+        st.error("❌ โหลดเสียงตัวอย่างไม่สำเร็จ กรุณาตรวจสอบว่าไฟล์ใน Google Drive ตั้งเป็น 'Anyone with the link'")
 else:
     st.warning("⚠️ ไม่พบ URL ไฟล์เสียงต้นแบบในช่อง audio_url ของแถวนี้")
-    st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3") 
+    st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
 
 # ส่วนที่ 2: อัดเสียงด้วยฟังก์ชันมาตรฐานของ Streamlit
 st.write("### 2. อัดเสียงของคุณ")
@@ -83,3 +125,4 @@ with col2:
     if st.button("ถัดไป ➡️") and st.session_state.current_index < len(df_audition) - 1:
         st.session_state.current_index += 1
         st.rerun()
+        
