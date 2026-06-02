@@ -20,7 +20,7 @@ def to_direct_link(url):
 @st.cache_data(ttl=60)  # ตั้งเวลาเคลียร์แคชทุกๆ 1 นาที เผื่อมีการอัปเดตข้อมูลบนชีต
 def load_data():
     # ใช้ลิงก์ตรงสำหรับส่งออก CSV จากแท็บ Audition_Data
-    csv_url = "https://docs.google.com/spreadsheets/d/1mBRUTgttVMTC1h8WNCXtM24Zvnz-WQcg1VtotPXQFIc/export?format=csv&gid=189130504"
+    csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCyZquKSv6jlhdnKA7r_L8tr9rrmbCO9oEID-v0YHHfMsBpzM8w9stkhJdvhNTb9MTRvz5b6nZbJ8E/pub?gid=189130504&single=true&output=csv"
     df = pd.read_csv(csv_url)
     
     # ทำความสะอาดช่องว่างรอบๆ ชื่อคอลัมน์
